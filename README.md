@@ -1,12 +1,16 @@
 # ML Revenue Predictor — API de Predicción de Ingresos de Alquileres en Madrid
 
-API REST desplegada en **Render** que predice el ingreso anual estimado de alojamientos turísticos en Madrid, a partir de un modelo de Machine Learning entrenado con datos de Airbnb.
+API REST desplegada en **Render** que predice el ingreso anual estimado de alojamientos turísticos en Madrid, a partir de un modelo XGBoost entrenado con datos de Airbnb.
+
+**Demo en vivo:** [estimatupiso.onrender.com](https://estimatupiso.onrender.com/)
+
+> Nota: la API está desplegada en el plan gratuito de Render, por lo que la primera petición tras un periodo de inactividad puede tardar unos 30 segundos en responder mientras el servicio se reactiva.
 
 ## Estructura del repositorio
 
 ```
 ├── data/
-│   └── df_alquileres_original.csv    # Dataset de entrenamiento
+│   └── df_alquileres_original.csv     # Dataset de entrenamiento
 ├── models/
 │   └── modelo_optimizado.pkl          # Modelo entrenado (XGBoost)
 ├── static/
@@ -40,9 +44,10 @@ Landing page con información del servicio y enlaces a los demás endpoints.
 Formulario interactivo para introducir variables y obtener una predicción.
 
 ### `POST /api/v1/predict`
-Endpoint principal de predicción. Recibe un JSON con las features del alojamiento y devuelve la predicción en euros.
+Endpoint principal de predicción. Recibe un JSON con las features del alojamiento y devuelve la predicción en euros. Los campos faltantes se completan con valores por defecto.
 
 **Ejemplo de petición:**
+
 ```python
 import requests
 
@@ -79,11 +84,12 @@ data = {
     "reviews_per_month": 2.5
 }
 
-response = requests.post("https://team-challenge-despliegue-modelo.onrender.com/api/v1/predict", json=data)
+response = requests.post("https://estimatupiso.onrender.com/api/v1/predict", json=data)
 print(response.json())
 ```
 
 **Ejemplo de respuesta:**
+
 ```json
 {
     "prediction": 24530.75,
@@ -96,23 +102,14 @@ La predicción se devuelve directamente en euros (ingreso anual estimado).
 
 ## Reentrenamiento del modelo
 
-Para reentrenar el modelo con los datos actuales:
-
 ```bash
 python model.py
 ```
 
-Esto ejecuta el pipeline completo de preprocesado, optimización de hiperparámetros y guardado del modelo en `models/modelo_optimizado.pkl`.
+Ejecuta el pipeline completo de preprocesado, optimización de hiperparámetros y guardado del modelo en `models/modelo_optimizado.pkl`.
 
-## Despliegue
+## Ejecución local
 
-La API está desplegada en Render y accesible públicamente:
-
-**https://estimatupiso.onrender.com/**
-
-### Ejecución local
-
-Si quieres ejecutarla en local:
 ```bash
 pip install -r requirements.txt
 python app_model.py
@@ -122,11 +119,19 @@ La app estará disponible en `http://127.0.0.1:5000`.
 
 ## Tecnologías
 
-- Python, Flask
-- scikit-learn, XGBoost
-- pandas, NumPy
-- Render (despliegue)
+- **Python** — Flask, pandas, NumPy
+- **Machine Learning** — scikit-learn, XGBoost, joblib
+- **Despliegue** — Render
+
+## Proyecto relacionado
+
+El modelo servido por esta API se entrenó en [madrid-rental-revenue-prediction](https://github.com/HimuraFresh/madrid-rental-revenue-prediction), donde está todo el proceso de EDA, feature engineering y comparativa de modelos.
 
 ## Autores
 
-Román, Javier, Nazareth y Sara
+Proyecto desarrollado en equipo durante el bootcamp de Data Science & IA de The Bridge:
+
+- Nazareth Montero
+- Javier Pascual ([@JavierPasAg](https://github.com/JavierPasAg))
+- Sara Ruiz
+- Román Diaz ([@HimuraFresh](https://github.com/HimuraFresh))
