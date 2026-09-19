@@ -1,15 +1,56 @@
 from flask import Flask, jsonify, request, render_template
-import os
-import pickle
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error
-import numpy as np
+import json
 import joblib
+import numpy as np
+import pandas as pd
 
 app = Flask(__name__)
 
-model = joblib.load("models/modelo_optimizado.pkl")
+# Se cargan una vez al arrancar, no en cada petición
+
+model = joblib.load("models/modelo_revenue_madrid.pkl")
+
+with open("resources/barrios.json", encoding="utf-8") as f:
+    BARRIOS = json.load(f)
+
+with open("resources/defaults.json", encoding="utf-8") as f:
+    DEFAULTS = json.load(f)
+
+def construir_fila(data):
+    """Combina lo que manda el usuario con los defaults y las derivaciones."""
+
+    barrio = data.get("neighbourhood_cleansed")
+
+    if barrio not in BARRIOS:
+        raise ValueError(f"Barrio no reconocido: {barrio}")
+
+    info = BARRIOS[barrio]
+
+    fila = dict(DEFAULTS)
+
+    # Lo que deriva el servidor a partir del barrio
+    
+    fila["neighbourhood_cleansed"] = barrio
+    fila["neighbourhood_group_cleansed"] = info["distrito"]
+    fila["latitude"] = info["lat"]
+    fila["longitude"] = info["lon"]
+
+    # Lo que pone el usuario, tal cual llega del formulario
+    for campo in ["room_type", "accommodates", "bedrooms", "beds", "bathrooms",
+                  "price", "n_amenities", "host_is_superhost", "instant_bookable",
+                  "bano_compartido", "calculated_host_listings_count"]:
+        fila[campo] = data[campo]
+
+    # property_type se deriva de la modalidad elegida
+    fila["property_type"] = (
+        "Entire rental unit" if data["room_type"] == "Entire home/apt"
+        else "Private room in rental unit"
+    )
+
+    # Precio por plaza
+    fila["precio_por_persona"] = data["price"] / data["accommodates"]
+
+    return fila
 
 # Landing page
 @app.route("/", methods=["GET"])
@@ -19,7 +60,7 @@ def hello():
 # Formulario de predicción
 @app.route("/api/v1/predict-form", methods=["GET"])
 def predict_form():
-    return render_template("form.html")
+    return render_template("form.html", barrios=sorted(BARRIOS.keys()))
 
 # Endpoint de predicción
 @app.route("/api/v1/predict", methods=["POST"])
@@ -28,51 +69,12 @@ def predict():
     if not data:
         return jsonify({"error": "No se ha proporcionado un cuerpo JSON"}), 400
 
-    required_columns = [
-        'host_since', 'host_response_rate', 'host_acceptance_rate', 'host_is_superhost',
-        'host_listings_count', 'host_total_listings_count', 'host_verifications',
-        'host_has_profile_pic', 'host_identity_verified', 'latitude', 'longitude',
-        'accommodates', 'bathrooms', 'bedrooms', 'beds', 'price', 'minimum_nights',
-        'maximum_nights', 'availability_365', 'number_of_reviews_ltm',
-        'estimated_occupancy_l365d', 'review_scores_rating', 'review_scores_accuracy',
-        'review_scores_cleanliness', 'review_scores_checkin', 'review_scores_communication',
-        'review_scores_location', 'review_scores_value', 'instant_bookable',
-        'reviews_per_month', 'host_response_time_ord', 'host_response_time_num',
-        'has_host_responded', 'has_reviews', 'days_since_last_review', 'review_lifetime',
-        'bathrooms_num', 'is_bathroom_shared', 'room_type_Hotel room', 'room_type_Private room',
-        'room_type_Shared room', 'ng_Barajas', 'ng_Carabanchel', 'ng_Centro', 'ng_Chamartín',
-        'ng_Chamberí', 'ng_Ciudad Lineal', 'ng_Fuencarral - El Pardo', 'ng_Hortaleza',
-        'ng_Latina', 'ng_Moncloa - Aravaca', 'ng_Moratalaz', 'ng_Puente de Vallecas',
-        'ng_Retiro', 'ng_Salamanca', 'ng_San Blas - Canillejas', 'ng_Tetuán', 'ng_Usera',
-        'ng_Vicálvaro', 'ng_Villa de Vallecas', 'ng_Villaverde', 'neighbourhood_revenue',
-        'pt_revenue'
-    ]
-
-    input_values = {}
-    missing_cols = []
-
-    for col in required_columns:
-        if col in data:
-            input_values[col] = data[col]
-        else:
-            input_values[col] = 0.0
-            missing_cols.append(col)
-
-    input_data = pd.DataFrame([input_values])[required_columns]
-
     try:
-        prediction = model.predict(input_data)
-        result = float(np.expm1(prediction[0]))
+        fila = construir_fila(data)
+        prediccion = model.predict(pd.DataFrame([fila]))
+        revenue = float(np.expm1(prediccion[0]))
 
-        response = {
-    "prediction": round(result, 2),
-    "status": "success"
-}
-
-        if missing_cols:
-            response["note"] = f"Se usaron valores por defecto para {len(missing_cols)} campos faltantes."
-
-        return jsonify(response)
+        return jsonify({"prediction": round(revenue, 2), "status": "success"})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

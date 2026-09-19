@@ -12,7 +12,7 @@
 <body class="form-page">
 
 <div class="container-fluid py-4 px-lg-4">
-    <!-- Banner superior -->
+
     <div class="top-banner mb-4">
         <div class="top-banner__content">
             <div class="top-banner__left">
@@ -26,8 +26,9 @@
                 </h1>
 
                 <p class="top-banner__text mb-0">
-                    Ajusta las variables del inmueble, prueba escenarios distintos y obtén una
-                    estimación rápida del ingreso anual esperado para alquiler turístico en Madrid.
+                    Doce datos sobre el inmueble bastan para estimar el ingreso anual.
+                    El resto de variables del modelo las completa el servidor con el
+                    perfil del anfitrión típico de Madrid.
                 </p>
             </div>
 
@@ -43,30 +44,32 @@
     </div>
 
     <div class="row g-4">
-        <!-- Columna principal -->
+
         <div class="col-xl-9 col-lg-8">
             <div class="form-container">
+
                 <div class="form-header-banner mb-4">
                     <div>
                         <p class="mini-eyebrow mb-2">Simulación interactiva</p>
                         <h2 class="mb-1">Configura tu predicción</h2>
                         <p class="mb-0">
-                            Introduce datos reales o genera un ejemplo automático para explorar el comportamiento del modelo.
+                            Introduce los datos de tu alojamiento o genera un ejemplo
+                            para explorar el comportamiento del modelo.
                         </p>
                     </div>
                 </div>
 
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
                     <div>
-                        <h3 class="section-title mb-1">Variables del modelo</h3>
+                        <h3 class="section-title mb-1">Datos del alojamiento</h3>
                         <p class="section-subtitle mb-0">
-                            Modifica valores y pulsa <strong>Enviar a Predicción</strong> para recalcular el resultado.
+                            Completa los campos y pulsa <strong>Enviar a Predicción</strong>.
                         </p>
                     </div>
 
                     <div class="d-flex flex-wrap gap-2">
                         <button type="button" class="btn btn-action btn-random" onclick="randomize()">
-                            <i class="bi bi-dice-5-fill me-2"></i>Randomizar Todo
+                            <i class="bi bi-dice-5-fill me-2"></i>Generar ejemplo
                         </button>
 
                         <button type="button" class="btn btn-action btn-predict" onclick="sendPrediction()">
@@ -79,7 +82,6 @@
                     </div>
                 </div>
 
-                <!-- Barra resumen/filtros -->
                 <div class="info-strip mb-4">
                     <div class="info-strip__item">
                         <span class="info-strip__label">Estado</span>
@@ -87,34 +89,179 @@
                     </div>
 
                     <div class="info-strip__item">
-                        <span class="info-strip__label">Variables</span>
-                        <strong id="variables-count">0</strong>
+                        <span class="info-strip__label">Campos</span>
+                        <strong>12</strong>
                     </div>
 
-                    <div class="info-strip__item info-strip__item--search">
-                        <label for="search-input" class="form-label small fw-bold mb-1">
-                            <i class="bi bi-search me-1"></i>Buscar variable
-                        </label>
-                        <input
-                            type="text"
-                            id="search-input"
-                            class="form-control"
-                            placeholder="Ej. bathrooms, price, latitude..."
-                        >
+                    <div class="info-strip__item">
+                        <span class="info-strip__label">Variables del modelo</span>
+                        <strong>29</strong>
                     </div>
                 </div>
 
-                <form id="ml-form" class="row g-3"></form>
+                <form id="ml-form" class="row g-3">
+
+                    <!-- Ubicación -->
+                    <div class="col-12">
+                        <h5 class="fw-bold mb-2 mt-2">Ubicación</h5>
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 col-md-6">
+                        <div class="input-card">
+                            <div class="input-card-top">
+                                <label class="form-label small fw-bold mb-1" for="inp-neighbourhood_cleansed">Barrio</label>
+                                <span class="input-badge">obligatorio</span>
+                            </div>
+                            <select class="form-select form-select-sm" id="inp-neighbourhood_cleansed">
+                                {% for barrio in barrios %}
+                                <option value="{{ barrio }}">{{ barrio }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">El distrito y las coordenadas se deducen del barrio.</small>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 col-md-6">
+                        <div class="input-card">
+                            <div class="input-card-top">
+                                <label class="form-label small fw-bold mb-1" for="inp-room_type">Modalidad</label>
+                                <span class="input-badge">obligatorio</span>
+                            </div>
+                            <select class="form-select form-select-sm" id="inp-room_type">
+                                <option value="Entire home/apt">Alojamiento entero</option>
+                                <option value="Private room">Habitación privada</option>
+                                <option value="Shared room">Habitación compartida</option>
+                                <option value="Hotel room">Habitación de hotel</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Capacidad -->
+                    <div class="col-12">
+                        <h5 class="fw-bold mb-2 mt-3">Capacidad</h5>
+                    </div>
+
+                    <div class="col-xxl-3 col-xl-4 col-lg-6 col-md-6">
+                        <div class="input-card">
+                            <div class="input-card-top">
+                                <label class="form-label small fw-bold mb-1" for="inp-accommodates">Plazas</label>
+                            </div>
+                            <input type="number" min="1" step="1" class="form-control form-control-sm" id="inp-accommodates" value="4">
+                        </div>
+                    </div>
+
+                    <div class="col-xxl-3 col-xl-4 col-lg-6 col-md-6">
+                        <div class="input-card">
+                            <div class="input-card-top">
+                                <label class="form-label small fw-bold mb-1" for="inp-bedrooms">Habitaciones</label>
+                            </div>
+                            <input type="number" min="1" step="1" class="form-control form-control-sm" id="inp-bedrooms" value="2">
+                        </div>
+                    </div>
+
+                    <div class="col-xxl-3 col-xl-4 col-lg-6 col-md-6">
+                        <div class="input-card">
+                            <div class="input-card-top">
+                                <label class="form-label small fw-bold mb-1" for="inp-beds">Camas</label>
+                            </div>
+                            <input type="number" min="1" step="1" class="form-control form-control-sm" id="inp-beds" value="3">
+                        </div>
+                    </div>
+
+                    <div class="col-xxl-3 col-xl-4 col-lg-6 col-md-6">
+                        <div class="input-card">
+                            <div class="input-card-top">
+                                <label class="form-label small fw-bold mb-1" for="inp-bathrooms">Baños</label>
+                            </div>
+                            <input type="number" min="1" step="1" class="form-control form-control-sm" id="inp-bathrooms" value="1">
+                        </div>
+                    </div>
+
+                    <div class="col-xxl-3 col-xl-4 col-lg-6 col-md-6">
+                        <div class="input-card">
+                            <div class="input-card-top">
+                                <label class="form-label small fw-bold mb-1" for="inp-bano_compartido">Baño compartido</label>
+                            </div>
+                            <select class="form-select form-select-sm" id="inp-bano_compartido">
+                                <option value="0">No</option>
+                                <option value="1">Sí</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Oferta -->
+                    <div class="col-12">
+                        <h5 class="fw-bold mb-2 mt-3">Oferta</h5>
+                    </div>
+
+                    <div class="col-xxl-3 col-xl-4 col-lg-6 col-md-6">
+                        <div class="input-card">
+                            <div class="input-card-top">
+                                <label class="form-label small fw-bold mb-1" for="inp-price">Precio por noche (€)</label>
+                            </div>
+                            <input type="number" min="1" step="1" class="form-control form-control-sm" id="inp-price" value="120">
+                        </div>
+                    </div>
+
+                    <div class="col-xxl-3 col-xl-4 col-lg-6 col-md-6">
+                        <div class="input-card">
+                            <div class="input-card-top">
+                                <label class="form-label small fw-bold mb-1" for="inp-n_amenities">Servicios ofrecidos</label>
+                            </div>
+                            <input type="number" min="0" step="1" class="form-control form-control-sm" id="inp-n_amenities" value="29">
+                            <small class="text-muted">La media en Madrid son 29.</small>
+                        </div>
+                    </div>
+
+                    <div class="col-xxl-3 col-xl-4 col-lg-6 col-md-6">
+                        <div class="input-card">
+                            <div class="input-card-top">
+                                <label class="form-label small fw-bold mb-1" for="inp-instant_bookable">Reserva inmediata</label>
+                            </div>
+                            <select class="form-select form-select-sm" id="inp-instant_bookable">
+                                <option value="0">No</option>
+                                <option value="1">Sí</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Anfitrión -->
+                    <div class="col-12">
+                        <h5 class="fw-bold mb-2 mt-3">Anfitrión</h5>
+                    </div>
+
+                    <div class="col-xxl-3 col-xl-4 col-lg-6 col-md-6">
+                        <div class="input-card">
+                            <div class="input-card-top">
+                                <label class="form-label small fw-bold mb-1" for="inp-host_is_superhost">¿Eres superhost?</label>
+                            </div>
+                            <select class="form-select form-select-sm" id="inp-host_is_superhost">
+                                <option value="0">No</option>
+                                <option value="1">Sí</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-xxl-3 col-xl-4 col-lg-6 col-md-6">
+                        <div class="input-card">
+                            <div class="input-card-top">
+                                <label class="form-label small fw-bold mb-1" for="inp-calculated_host_listings_count">Alojamientos que gestionas</label>
+                            </div>
+                            <input type="number" min="1" step="1" class="form-control form-control-sm" id="inp-calculated_host_listings_count" value="1">
+                        </div>
+                    </div>
+
+                </form>
             </div>
         </div>
 
-        <!-- Panel lateral -->
         <div class="col-xl-3 col-lg-4">
             <div id="result-box" class="card result-card">
                 <div class="card-body">
+
                     <div class="result-card__banner mb-3">
                         <p class="result-card__eyebrow mb-1">
-                            <i class="bi bi-graph-up-arrow me-1"></i>Estimación en tiempo real
+                            <i class="bi bi-graph-up-arrow me-1"></i>Estimación anual
                         </p>
                         <h5 class="card-title mb-0">Resultado de Predicción</h5>
                     </div>
@@ -132,30 +279,28 @@
 
                     <div class="result-summary mt-4">
                         <h6 class="result-summary__title">
-                            <i class="bi bi-clipboard-data me-2"></i>Resumen rápido
+                            <i class="bi bi-clipboard-data me-2"></i>Resumen
                         </h6>
 
-                        <div class="result-summary__item">
-                            <span>Capacidad</span>
-                            <strong id="summary-accommodates">—</strong>
-                        </div>
-
-                        <div class="result-summary__item">
-                            <span>Disponibilidad</span>
-                            <strong id="summary-availability_365">—</strong>
-                        </div>
-
-                        <div class="result-summary__item">
-                            <span>Baños</span>
-                            <strong id="summary-bathrooms">—</strong>
-                        </div>
+                        <div class="result-summary__item"><span>Barrio</span><strong id="s-neighbourhood_cleansed">—</strong></div>
+                        <div class="result-summary__item"><span>Modalidad</span><strong id="s-room_type">—</strong></div>
+                        <div class="result-summary__item"><span>Plazas</span><strong id="s-accommodates">—</strong></div>
+                        <div class="result-summary__item"><span>Habitaciones</span><strong id="s-bedrooms">—</strong></div>
+                        <div class="result-summary__item"><span>Camas</span><strong id="s-beds">—</strong></div>
+                        <div class="result-summary__item"><span>Baños</span><strong id="s-bathrooms">—</strong></div>
+                        <div class="result-summary__item"><span>Baño compartido</span><strong id="s-bano_compartido">—</strong></div>
+                        <div class="result-summary__item"><span>Precio</span><strong id="s-price">—</strong></div>
+                        <div class="result-summary__item"><span>Servicios</span><strong id="s-n_amenities">—</strong></div>
+                        <div class="result-summary__item"><span>Reserva inmediata</span><strong id="s-instant_bookable">—</strong></div>
+                        <div class="result-summary__item"><span>Superhost</span><strong id="s-host_is_superhost">—</strong></div>
+                        <div class="result-summary__item"><span>Alojamientos</span><strong id="s-calculated_host_listings_count">—</strong></div>
                     </div>
 
                     <div class="tip-box mt-4">
                         <strong><i class="bi bi-lightbulb-fill me-2"></i>Consejo</strong>
                         <p class="mb-0 mt-2">
-                            Ajusta precio, disponibilidad y capacidad para comparar
-                            distintos escenarios de rentabilidad.
+                            Cambia el barrio manteniendo el resto igual para ver
+                            cuánto pesa la ubicación en la estimación.
                         </p>
                     </div>
                 </div>
@@ -165,45 +310,74 @@
 </div>
 
 <script>
-    const columns = [
-        'host_since', 'host_response_rate', 'host_acceptance_rate', 'host_is_superhost',
-        'host_listings_count', 'host_total_listings_count', 'host_verifications',
-        'host_has_profile_pic', 'host_identity_verified', 'latitude', 'longitude',
-        'accommodates', 'bathrooms', 'bedrooms', 'beds', 'price', 'minimum_nights',
-        'maximum_nights', 'availability_365', 'number_of_reviews_ltm',
-        'estimated_occupancy_l365d', 'review_scores_rating', 'review_scores_accuracy',
-        'review_scores_cleanliness', 'review_scores_checkin', 'review_scores_communication',
-        'review_scores_location', 'review_scores_value', 'instant_bookable',
-        'reviews_per_month', 'host_response_time_ord', 'has_reviews',
-        'days_since_last_review', 'review_lifetime', 'host_response_time_num',
-        'has_host_responded', 'room_type_Hotel room', 'room_type_Private room',
-        'room_type_Shared room', 'bathrooms_num', 'is_bathroom_shared', 'ng_Barajas',
-        'ng_Carabanchel', 'ng_Centro', 'ng_Chamartín', 'ng_Chamberí', 'ng_Ciudad Lineal',
-        'ng_Fuencarral - El Pardo', 'ng_Hortaleza', 'ng_Latina', 'ng_Moncloa - Aravaca',
-        'ng_Moratalaz', 'ng_Puente de Vallecas', 'ng_Retiro', 'ng_Salamanca',
-        'ng_San Blas - Canillejas', 'ng_Tetuán', 'ng_Usera', 'ng_Vicálvaro',
-        'ng_Villa de Vallecas', 'ng_Villaverde', 'neighbourhood_revenue', 'pt_revenue'
-    ];
+    const numericos = ['accommodates', 'bedrooms', 'beds', 'bathrooms', 'price',
+                       'n_amenities', 'calculated_host_listings_count'];
+
+    const selects = ['neighbourhood_cleansed', 'room_type', 'bano_compartido',
+                     'instant_bookable', 'host_is_superhost'];
+
+    const campos = [...numericos, ...selects];
 
     const form = document.getElementById('ml-form');
-    const searchInput = document.getElementById('search-input');
-    const variablesCount = document.getElementById('variables-count');
     const summaryStatus = document.getElementById('summary-status');
-
-    const summaryAccommodates = document.getElementById('summary-accommodates');
-    const summaryAvailability = document.getElementById('summary-availability_365');
-    const summaryBathrooms = document.getElementById('summary-bathrooms');
-
     const predictionValue = document.getElementById('prediction-value');
     const predictionNote = document.getElementById('prediction-note');
     const btnDownloadCsv = document.getElementById('btn-download-csv');
+
     let lastPredictionExport = null;
+
+    // Texto legible para el resumen lateral
+    const etiquetas = {
+        room_type: {
+            'Entire home/apt': 'Alojamiento entero',
+            'Private room': 'Habitación privada',
+            'Shared room': 'Habitación compartida',
+            'Hotel room': 'Habitación de hotel'
+        },
+        binario: { '0': 'No', '1': 'Sí' }
+    };
+
+    function recogerDatos() {
+        const data = {};
+
+        numericos.forEach(c => {
+            data[c] = parseFloat(document.getElementById(`inp-${c}`).value) || 0;
+        });
+
+        data['neighbourhood_cleansed'] = document.getElementById('inp-neighbourhood_cleansed').value;
+        data['room_type'] = document.getElementById('inp-room_type').value;
+
+        ['bano_compartido', 'instant_bookable', 'host_is_superhost'].forEach(c => {
+            data[c] = parseInt(document.getElementById(`inp-${c}`).value);
+        });
+
+        return data;
+    }
+
+    function actualizarResumen() {
+        const d = recogerDatos();
+
+        document.getElementById('s-neighbourhood_cleansed').textContent = d.neighbourhood_cleansed;
+        document.getElementById('s-room_type').textContent = etiquetas.room_type[d.room_type];
+        document.getElementById('s-accommodates').textContent = d.accommodates;
+        document.getElementById('s-bedrooms').textContent = d.bedrooms;
+        document.getElementById('s-beds').textContent = d.beds;
+        document.getElementById('s-bathrooms').textContent = d.bathrooms;
+        document.getElementById('s-bano_compartido').textContent = etiquetas.binario[d.bano_compartido];
+        document.getElementById('s-price').textContent = d.price + ' €';
+        document.getElementById('s-n_amenities').textContent = d.n_amenities;
+        document.getElementById('s-instant_bookable').textContent = etiquetas.binario[d.instant_bookable];
+        document.getElementById('s-host_is_superhost').textContent = etiquetas.binario[d.host_is_superhost];
+        document.getElementById('s-calculated_host_listings_count').textContent = d.calculated_host_listings_count;
+    }
 
     function downloadPredictionCsv() {
         if (!lastPredictionExport) return;
+
         const { data, prediction } = lastPredictionExport;
-        const header = [...columns, 'prediction_eur'].join(',');
-        const row = columns.map(c => data[c]).join(',') + ',' + prediction;
+        const header = [...campos, 'prediction_eur'].join(',');
+        const row = campos.map(c => data[c]).join(',') + ',' + prediction;
+
         const blob = new Blob([header + '\n' + row], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -213,110 +387,42 @@
         URL.revokeObjectURL(url);
     }
 
-    function updateQuickSummary() {
-        const acc = document.getElementById('inp-accommodates');
-        const av = document.getElementById('inp-availability_365');
-        const bath = document.getElementById('inp-bathrooms');
-
-        summaryAccommodates.textContent = acc ? acc.value : '—';
-        summaryAvailability.textContent = av ? av.value : '—';
-        summaryBathrooms.textContent = bath ? bath.value : '—';
-    }
-
-    // Generar inputs automáticamente
-    columns.forEach(col => {
-        const div = document.createElement('div');
-        div.className = 'col-xxl-3 col-xl-4 col-lg-6 col-md-6 variable-item';
-        div.setAttribute('data-name', col.toLowerCase());
-
-        div.innerHTML = `
-            <div class="input-card">
-                <div class="input-card-top">
-                    <label class="form-label small fw-bold mb-1" for="inp-${col}">${col}</label>
-                    <span class="input-badge">feature</span>
-                </div>
-                <input
-                    type="number"
-                    step="any"
-                    class="form-control form-control-sm"
-                    id="inp-${col}"
-                    value="0"
-                >
-            </div>
-        `;
-
-        form.appendChild(div);
-    });
-
-    variablesCount.innerText = columns.length;
-
-    // Escuchar cambios para actualizar resumen rápido
-    form.addEventListener('input', function () {
-        updateQuickSummary();
-    });
-
-    // Búsqueda
-    searchInput.addEventListener('input', function () {
-        const query = this.value.toLowerCase().trim();
-        const items = document.querySelectorAll('.variable-item');
-
-        items.forEach(item => {
-            const name = item.getAttribute('data-name');
-            item.style.display = name.includes(query) ? '' : 'none';
-        });
-    });
-
-    // Randomizar
+    // Genera un alojamiento plausible dentro de los rangos del train
     function randomize() {
-        columns.forEach(col => {
-            const input = document.getElementById(`inp-${col}`);
+        const entero = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-            if (!input) return;
+        const selectBarrio = document.getElementById('inp-neighbourhood_cleansed');
+        selectBarrio.selectedIndex = entero(0, selectBarrio.options.length - 1);
 
-            if (col.startsWith('ng_') || col.startsWith('room_type_') || col.startsWith('is_')) {
-                input.value = Math.round(Math.random());
-            } else if (col === 'instant_bookable' || col === 'has_reviews' || col === 'has_host_responded' ||
-                       col === 'host_is_superhost' || col === 'host_has_profile_pic' || col === 'host_identity_verified') {
-                input.value = Math.round(Math.random());
-            } else if (col === 'latitude') {
-                input.value = (Math.random() * (40.50 - 40.30) + 40.30).toFixed(5);
-            } else if (col === 'longitude') {
-                input.value = (Math.random() * (-3.60 - -3.80) + -3.80).toFixed(5);
-            } else if (col.includes('review_scores')) {
-                input.value = (Math.random() * (5 - 3.5) + 3.5).toFixed(2);
-            } else if (col === 'bathrooms' || col === 'bathrooms_num') {
-                const bathroomOptions = [1, 1.5, 2, 2.5, 3];
-                input.value = bathroomOptions[Math.floor(Math.random() * bathroomOptions.length)];
-            } else if (col === 'price') {
-                input.value = Math.floor(Math.random() * 180) + 50;
-            } else if (col === 'availability_365') {
-                input.value = Math.floor(Math.random() * 365);
-            } else if (col === 'accommodates') {
-                input.value = Math.floor(Math.random() * 7) + 1;
-            } else {
-                input.value = Math.floor(Math.random() * 50);
-            }
-        });
+        const plazas = entero(1, 8);
+        const habitaciones = Math.max(1, Math.ceil(plazas / 2));
 
-        updateQuickSummary();
-        summaryStatus.innerText = "Randomizado";
-        predictionNote.innerText = "Se han generado valores de ejemplo. Pulsa “Enviar a Predicción”.";
+        document.getElementById('inp-accommodates').value = plazas;
+        document.getElementById('inp-bedrooms').value = habitaciones;
+        document.getElementById('inp-beds').value = entero(habitaciones, plazas);
+        document.getElementById('inp-bathrooms').value = entero(1, Math.max(1, habitaciones));
+        document.getElementById('inp-price').value = entero(30, 300);
+        document.getElementById('inp-n_amenities').value = entero(10, 60);
+        document.getElementById('inp-calculated_host_listings_count').value = entero(1, 15);
+
+        document.getElementById('inp-room_type').selectedIndex = Math.random() < 0.75 ? 0 : 1;
+        document.getElementById('inp-bano_compartido').selectedIndex = entero(0, 1);
+        document.getElementById('inp-instant_bookable').selectedIndex = entero(0, 1);
+        document.getElementById('inp-host_is_superhost').selectedIndex = entero(0, 1);
+
+        actualizarResumen();
+        summaryStatus.innerText = 'Ejemplo generado';
+        predictionNote.innerText = 'Valores de ejemplo listos. Pulsa Enviar a Predicción.';
     }
 
-    // Enviar predicción
     async function sendPrediction() {
-        const data = {};
+        const data = recogerDatos();
 
-        columns.forEach(col => {
-            const el = document.getElementById(`inp-${col}`);
-            data[col] = el ? (parseFloat(el.value) || 0) : 0;
-        });
-
-        predictionValue.innerText = "⏳";
-        predictionNote.innerText = "Calculando predicción...";
-        summaryStatus.innerText = "Calculando";
+        predictionValue.innerText = '⏳';
+        predictionNote.innerText = 'Calculando predicción...';
+        summaryStatus.innerText = 'Calculando';
         lastPredictionExport = null;
-        btnDownloadCsv.classList.add("d-none");
+        btnDownloadCsv.classList.add('d-none');
 
         try {
             const response = await fetch('/api/v1/predict', {
@@ -328,28 +434,31 @@
             const result = await response.json();
 
             if (result.prediction !== undefined) {
-                predictionValue.innerText = Number(result.prediction).toLocaleString("es-ES", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
+                predictionValue.innerText = Number(result.prediction).toLocaleString('es-ES', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
                 });
-                predictionNote.innerText = result.note || "Predicción realizada correctamente.";
-                summaryStatus.innerText = "Completado";
+                predictionNote.innerText = 'Estimación sobre datos disponibles antes de publicar el anuncio.';
+                summaryStatus.innerText = 'Completado';
                 lastPredictionExport = { data: { ...data }, prediction: result.prediction };
-                btnDownloadCsv.classList.remove("d-none");
+                btnDownloadCsv.classList.remove('d-none');
             } else {
-                predictionValue.innerText = "Error";
-                predictionNote.innerText = result.error || "Se produjo un error en la predicción.";
-                summaryStatus.innerText = "Error";
+                predictionValue.innerText = 'Error';
+                predictionNote.innerText = result.error || 'Se produjo un error en la predicción.';
+                summaryStatus.innerText = 'Error';
             }
         } catch (error) {
             console.error(error);
-            predictionValue.innerText = "Error";
-            predictionNote.innerText = "No se pudo conectar con el endpoint /api/v1/predict";
-            summaryStatus.innerText = "Sin conexión";
+            predictionValue.innerText = 'Error';
+            predictionNote.innerText = 'No se pudo conectar con el endpoint /api/v1/predict';
+            summaryStatus.innerText = 'Sin conexión';
         }
     }
 
-    updateQuickSummary();
+    form.addEventListener('input', actualizarResumen);
+    form.addEventListener('change', actualizarResumen);
+
+    actualizarResumen();
 </script>
 
 </body>

@@ -1,137 +1,163 @@
-# ML Revenue Predictor — API de Predicción de Ingresos de Alquileres en Madrid
+# API de estimación de ingresos de alojamientos turísticos en Madrid
 
-API REST desplegada en **Render** que predice el ingreso anual estimado de alojamientos turísticos en Madrid, a partir de un modelo XGBoost entrenado con datos de Airbnb.
+API REST en Flask que estima el ingreso anual de un alojamiento
+turístico en Madrid a partir de doce datos del inmueble.
 
-**Demo en vivo:** [estimatupiso.onrender.com](https://estimatupiso.onrender.com/)
+**Demo:** [estimatupiso.onrender.com](https://estimatupiso.onrender.com/)
 
-> Nota: la API está desplegada en el plan gratuito de Render, por lo que la primera petición tras un periodo de inactividad puede tardar unos 30 segundos en responder mientras el servicio se reactiva.
+> La API corre en el plan gratuito de Render, así que la primera
+> petición tras un rato de inactividad tarda unos 30 segundos
+> mientras el servicio se reactiva.
 
-## Estructura del repositorio
+---
 
-```
-├── data/
-│   └── df_alquileres_original.csv     # Dataset de entrenamiento
-├── models/
-│   └── modelo_optimizado.pkl          # Modelo entrenado (XGBoost)
-├── static/
-│   └── style.css
-├── templates/
-│   ├── index.html                     # Landing page
-│   └── form.html                      # Formulario de predicción
-├── app_model.py                       # Aplicación Flask (API)
-├── model.py                           # Script de entrenamiento del modelo
-├── requirements.txt
-├── .gitignore
-└── README.md
-```
+## Qué pide y qué completa el servidor
+
+El modelo espera 29 variables, pero el formulario solo pide doce:
+barrio, modalidad, plazas, habitaciones, camas, baños, baño
+compartido, precio por noche, servicios ofrecidos, reserva
+inmediata, superhost y número de alojamientos gestionados.
+
+El resto lo completa el servidor:
+
+**Derivadas del barrio.** El distrito y las coordenadas salen de una
+tabla de centroides, construida como la mediana de latitud y longitud
+de los anuncios de cada barrio.
+
+**Derivadas de otros campos.** El precio por plaza y el tipo de
+propiedad, que se deduce de la modalidad elegida.
+
+**Valores por defecto.** Los campos del anfitrión (tasas de respuesta
+y aceptación, antigüedad, verificación) se rellenan con la mediana o
+la moda del conjunto de entrenamiento, no con ceros.
+
+Ese reparto viene del caso de uso: quien consulta está proyectando un
+alojamiento que todavía no ha publicado, así que solo puede aportar
+lo que sabe del inmueble.
+
+---
 
 ## Modelo
 
-- **Algoritmo**: XGBoost (optimizado con RandomizedSearchCV)
-- **Target**: `revenue_log = log1p(estimated_revenue_l365d)`
-- **Pipeline**: SimpleImputer (mediana) → XGBRegressor
-- **Métricas en test**:
-  - RMSE (log): 0.058
-  - RMSE (€): 5.449,07
-  - R²: 0.9998
+Pipeline de XGBoost con el preprocesado dentro, entrenado en
+[madrid-rental-revenue-prediction](https://github.com/HimuraFresh/madrid-rental-revenue-prediction).
+La API carga un único objeto y no replica ninguna transformación.
+
+El target se modela en escala logarítmica y la predicción se devuelve
+en euros aplicando `expm1`.
+
+| Métrica (test) | Valor |
+|---|---|
+| RMSE (log) | 0,838 |
+| R² (log) | 0,584 |
+| MAE | 8.037 € |
+| Error porcentual mediano | 43,3 % |
+
+El modelo no usa reseñas, ocupación ni valoraciones: son datos que un
+alojamiento sin publicar no tiene.
+
+---
 
 ## Endpoints
 
 ### `GET /`
-Landing page con información del servicio y enlaces a los demás endpoints.
+Landing page.
 
 ### `GET /api/v1/predict-form`
-Formulario interactivo para introducir variables y obtener una predicción.
+Formulario interactivo con los doce campos.
 
 ### `POST /api/v1/predict`
-Endpoint principal de predicción. Recibe un JSON con las features del alojamiento y devuelve la predicción en euros. Los campos faltantes se completan con valores por defecto.
-
-**Ejemplo de petición:**
+Recibe un JSON con los doce campos y devuelve el ingreso anual
+estimado en euros.
 
 ```python
 import requests
 
 data = {
-    "host_since": 3000,
-    "host_response_rate": 95,
-    "host_acceptance_rate": 90,
-    "host_is_superhost": 1,
-    "host_listings_count": 2,
-    "host_total_listings_count": 2,
-    "host_verifications": 3,
-    "host_has_profile_pic": 1,
-    "host_identity_verified": 1,
-    "latitude": 40.42,
-    "longitude": -3.70,
+    "neighbourhood_cleansed": "Sol",
+    "room_type": "Entire home/apt",
     "accommodates": 4,
-    "bathrooms": 1,
     "bedrooms": 2,
-    "beds": 2,
-    "price": 80,
-    "minimum_nights": 2,
-    "maximum_nights": 365,
-    "availability_365": 200,
-    "number_of_reviews_ltm": 15,
-    "estimated_occupancy_l365d": 250,
-    "review_scores_rating": 4.5,
-    "review_scores_accuracy": 4.6,
-    "review_scores_cleanliness": 4.7,
-    "review_scores_checkin": 4.8,
-    "review_scores_communication": 4.9,
-    "review_scores_location": 4.5,
-    "review_scores_value": 4.3,
+    "beds": 3,
+    "bathrooms": 1,
+    "bano_compartido": 0,
+    "price": 120,
+    "n_amenities": 29,
     "instant_bookable": 1,
-    "reviews_per_month": 2.5
+    "host_is_superhost": 0,
+    "calculated_host_listings_count": 1
 }
 
-response = requests.post("https://estimatupiso.onrender.com/api/v1/predict", json=data)
-print(response.json())
+r = requests.post("https://estimatupiso.onrender.com/api/v1/predict", json=data)
+print(r.json())
 ```
 
-**Ejemplo de respuesta:**
+Respuesta:
 
 ```json
 {
-    "prediction": 24530.75,
-    "status": "success",
-    "note": "Se usaron valores por defecto para 22 campos faltantes."
+    "prediction": 18889.04,
+    "status": "success"
 }
 ```
 
-La predicción se devuelve directamente en euros (ingreso anual estimado).
+Si el barrio no está entre los 127 reconocidos, devuelve un error
+indicándolo en lugar de predecir sobre datos inventados.
 
-## Reentrenamiento del modelo
-
-```bash
-python model.py
-```
-
-Ejecuta el pipeline completo de preprocesado, optimización de hiperparámetros y guardado del modelo en `models/modelo_optimizado.pkl`.
+---
 
 ## Ejecución local
 
 ```bash
+python -m venv .venv
+source .venv/Scripts/activate
 pip install -r requirements.txt
 python app_model.py
 ```
 
-La app estará disponible en `http://127.0.0.1:5000`.
+Disponible en `http://127.0.0.1:5000`.
 
-## Tecnologías
+Las versiones del `requirements.txt` están fijadas a las de
+entrenamiento: cargar el modelo bajo otras produce avisos de
+compatibilidad y puede alterar las predicciones.
 
-- **Python** — Flask, pandas, NumPy
-- **Machine Learning** — scikit-learn, XGBoost, joblib
-- **Despliegue** — Render
+---
 
-## Proyecto relacionado
+## Estructura del repositorio
 
-El modelo servido por esta API se entrenó en [madrid-rental-revenue-prediction](https://github.com/HimuraFresh/madrid-rental-revenue-prediction), donde está todo el proceso de EDA, feature engineering y comparativa de modelos.
+```text
+├── models/
+│   └── modelo_revenue_madrid.pkl   pipeline completo
+├── resources/
+│   ├── barrios.json                centroides y distrito por barrio
+│   └── defaults.json               valores por defecto del anfitrión
+├── static/
+│   └── css/style.css
+├── templates/
+│   ├── index.html
+│   └── form.html
+├── app_model.py
+├── requirements.txt
+└── README.md
+```
 
-## Autores
+El `.pkl` y los dos JSON se generan en el repo del modelo y se copian
+aquí. Este repo no entrena, solo sirve.
 
-Proyecto desarrollado en equipo durante el bootcamp de Data Science & IA de The Bridge:
+---
 
-- Nazareth Montero
-- Javier Pascual ([@JavierPasAg](https://github.com/JavierPasAg))
-- Sara Ruiz
-- Román Diaz ([@HimuraFresh](https://github.com/HimuraFresh))
+## Stack
+
+Flask, pandas, numpy, scikit-learn, xgboost, joblib y Render.
+
+---
+
+## Autoría
+
+Trabajo original desarrollado en equipo durante el bootcamp de Data
+Science e IA de The Bridge por Nazareth Montero, Javier Pascual
+([@JavierPasAg](https://github.com/JavierPasAg)), Sara Ruiz y Román
+Diaz ([@HimuraFresh](https://github.com/HimuraFresh)).
+
+El rediseño de la API y el modelo que sirve actualmente son trabajo
+individual de Román Diaz.
